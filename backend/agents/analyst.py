@@ -123,6 +123,7 @@ Report Context: {context}
 User: {message}"""
         # Try lightest model first (most available), then scale up
         response = None
+        last_error = ""
         for model in ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash']:
             try:
                 response = client.models.generate_content(
@@ -130,12 +131,13 @@ User: {message}"""
                     contents=prompt
                 )
                 break
-            except Exception:
+            except Exception as e:
+                last_error = str(e)
                 time.sleep(1)  # small delay before retry to avoid rate limit
                 continue
 
         if response is None:
-            raise Exception("All models unavailable")
+            raise Exception(f"All models unavailable. Last API error: {last_error}")
         return response.text.strip()
     except Exception as e:
         import traceback

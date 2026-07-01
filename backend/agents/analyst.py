@@ -88,34 +88,54 @@ Provide output as JSON matching this structure:
 def get_chat_response(message, context, language="English"):
     """Provides a chat response based on context and RAG."""
     try:
-        # 1. Search Knowledge Base (RAG) - fail gracefully if unavailable
-        kb_context = "No relevant medical textbooks found in local database."
+        # 1. Search Knowledge Base (RAG) - completely optional, skip silently if anything fails
+        kb_context = ""
         try:
-            if search_knowledge_base:
+            if callable(search_knowledge_base):
                 kb_results = search_knowledge_base(message, top_k=3)
                 if kb_results:
-                    kb_context = "\n".join(kb_results)
+                    kb_context = "\n\nVerified Medical Knowledge:\n" + "\n".join(kb_results)
         except Exception:
-            pass  # RAG failure should never block the chat
+            kb_context = ""  # RAG failure silently ignored
 
         client = get_client()
-        prompt = f"""You are OmniMed AI, a medical assistant built by Anushka Gupta.
-Answer the user's question clearly, empathetically and helpfully using the context below.
-Please provide your ENTIRE response in {language} — this is very important.
-If the user asks who made you, who trained you, or who your developer is, say: "I was developed and trained by Anushka Gupta."
-If the user types in Hindi or any other language, reply in that same language.
+        prompt = f"""You are OmniMed AI, a highly capable medical assistant built by Anushka Gupta.
+You can understand questions written in any language, Romanized/transliterated text (like Hinglish), and text with spelling mistakes or typos.
 
-Verified Medical Knowledge:
+IMPORTANT RULES:
+- Always reply in {language}.
+- If the user writes in Hindi (even in Roman script like "mujhe pet me dard hai"), reply in Hindi.
+- If the user writes with spelling errors or typos, understand the meaning and answer helpfully anyway.
+- Never refuse to answer due to typos, spelling errors, or mixed languages.
+- If asked who built you: "I was developed by Anushka Gupta."
+- Be empathetic, clear and helpful.
 {kb_context}
 
-Report Context: {context}
+Patient Report Context: {context}
 
 User Question: {message}"""
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt
+            )
+        except Exception:
+            # Fallback to a lighter model if 2.5-flash is unavailable
+            response = client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt
+            )
         return response.text.strip()
     except Exception as e:
         traceback.print_exc()
-        return "I apologize, but I am unable to process your request at the moment."
+        # Return an error message that matches the language
+        if language == 'हिन्दी':
+            return "क्षमा करें, अभी सेवा उपलब्ध नहीं है। कृपया दोबारा कोशिश करें।"
+        elif language == 'Español':
+            return "Lo siento, el servicio no está disponible en este momento. Por favor, inténtalo de nuevo."
+        elif language == 'Français':
+            return "Désolé, le service n'est pas disponible en ce moment. Veuillez réessayer."
+        elif language == '中文':
+            return "抱歉，服务暂时不可用，请稍后再试。"
+        else:
+            return "I'm sorry, I'm having trouble connecting right now. Please try again in a moment."

@@ -19,8 +19,8 @@ OmniMed AI is a next-generation medical analysis platform designed to bridge the
 ## 🏛️ Architecture
 
 ```mermaid
-graph TD
-    User([User]) -->|Symptoms (Voice/Text)| Triage[AI Triage Chatbot]
+flowchart TD
+    User([User]) -->|"Symptoms (Voice/Text)"| Triage[AI Triage Chatbot]
     Triage -->|Uploads PDF/Image| Frontend[React Frontend]
     
     Frontend -->|Multipart Form Data| Backend[Flask API]

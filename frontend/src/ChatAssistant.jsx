@@ -9,13 +9,36 @@ if (recognition) {
 }
 
 function ChatAssistant({ reportContext, language, languageCode }) {
-  const initialMessage = reportContext 
-    ? 'Hello! I am OmniMed AI, your clinical consultation assistant. I have reviewed your report. How can I help you understand your results today?'
-    : 'Hello! I am OmniMed AI, your clinical consultation assistant. How can I help you with your health questions today?';
+  const greetings = {
+    'English': {
+      withReport: 'Hello! I am OmniMed AI, your clinical consultation assistant. I have reviewed your report. How can I help you understand your results today?',
+      standalone: 'Hello! I am OmniMed AI, your clinical consultation assistant. How can I help you with your health questions today?'
+    },
+    'Español': {
+      withReport: '¡Hola! Soy OmniMed AI, tu asistente de consulta clínica. He revisado tu informe. ¿Cómo puedo ayudarte a entender tus resultados hoy?',
+      standalone: '¡Hola! Soy OmniMed AI, tu asistente de consulta clínica. ¿Cómo puedo ayudarte con tus preguntas de salud hoy?'
+    },
+    'हिन्दी': {
+      withReport: 'नमस्ते! मैं OmniMed AI हूँ, आपका क्लिनिकल सहायक। मैंने आपकी रिपोर्ट पढ़ ली है। आज मैं आपके परिणामों को समझने में कैसे मदद कर सकता हूँ?',
+      standalone: 'नमस्ते! मैं OmniMed AI हूँ, आपका स्वास्थ्य सहायक। आज मैं आपकी स्वास्थ्य संबंधी किसी भी समस्या में कैसे मदद कर सकता हूँ?'
+    },
+    '中文': {
+      withReport: '您好！我是 OmniMed AI，您的临床咨询助手。我已阅读您的报告。今天我如何帮助您理解您的结果？',
+      standalone: '您好！我是 OmniMed AI，您的健康咨询助手。今天我如何帮助您解答健康问题？'
+    },
+    'Français': {
+      withReport: 'Bonjour ! Je suis OmniMed AI, votre assistant de consultation clinique. J\'ai examiné votre rapport. Comment puis-je vous aider à comprendre vos résultats aujourd\'hui ?',
+      standalone: 'Bonjour ! Je suis OmniMed AI, votre assistant de santé. Comment puis-je vous aider avec vos questions de santé aujourd\'hui ?'
+    }
+  }
+
+  const langGreetings = greetings[language] || greetings['English']
+  const initialMessage = reportContext ? langGreetings.withReport : langGreetings.standalone
 
   const [messages, setMessages] = useState([
     { role: 'assistant', content: initialMessage }
   ])
+
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
@@ -41,6 +64,14 @@ function ChatAssistant({ reportContext, language, languageCode }) {
   useEffect(() => {
     if (recognition) recognition.lang = languageCode || 'en-US'
   }, [languageCode])
+
+  // Reset conversation with correct greeting whenever language changes
+  useEffect(() => {
+    const langGreets = greetings[language] || greetings['English']
+    const newGreeting = reportContext ? langGreets.withReport : langGreets.standalone
+    setMessages([{ role: 'assistant', content: newGreeting }])
+  }, [language])
+
 
   const speakMessage = (text) => {
     if (!window.speechSynthesis || !ttsEnabled) return

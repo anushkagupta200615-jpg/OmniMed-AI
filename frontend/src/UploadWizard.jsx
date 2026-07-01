@@ -1,6 +1,13 @@
-import { useState, useRef } from 'react'
-import { Upload, FileText, ChevronRight, Activity, File } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Upload, FileText, ChevronRight, Activity, File, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
 import ReportViewer from './ReportViewer'
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+const recognition = SpeechRecognition ? new SpeechRecognition() : null
+if (recognition) {
+  recognition.continuous = false
+  recognition.interimResults = false
+}
 
 function UploadWizard({ onComplete }) {
   const [step, setStep] = useState(1)
@@ -12,14 +19,51 @@ function UploadWizard({ onComplete }) {
   const [isTriaging, setIsTriaging] = useState(false)
   const [showUploadButton, setShowUploadButton] = useState(false)
   
+  // Voice states
+  const [isListening, setIsListening] = useState(false)
+  const [ttsEnabled, setTtsEnabled] = useState(true)
+  
   // Analysis state
   const [analysisStatus, setAnalysisStatus] = useState("Initializing...")
   const [reportData, setReportData] = useState(null)
   const [validationData, setValidationData] = useState(null)
   const fileInputRef = useRef(null)
 
+  useEffect(() => {
+    if (ttsEnabled && step === 1) {
+      speakMessage(triageMessages[triageMessages.length - 1].content)
+    }
+  }, [triageMessages, ttsEnabled, step])
+
+  const speakMessage = (text) => {
+    if (!window.speechSynthesis || !ttsEnabled) return
+    window.speechSynthesis.cancel() // Stop any current speech
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.rate = 1.05
+    window.speechSynthesis.speak(utterance)
+  }
+
+  const toggleListen = () => {
+    if (!recognition) return alert("Your browser doesn't support speech recognition.")
+    if (isListening) {
+      recognition.stop()
+      setIsListening(false)
+    } else {
+      recognition.start()
+      setIsListening(true)
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        setTriageInput(prev => prev ? prev + ' ' + transcript : transcript)
+        setIsListening(false)
+      }
+      recognition.onerror = () => setIsListening(false)
+      recognition.onend = () => setIsListening(false)
+    }
+  }
+
   const handleTriageSend = async () => {
     if (!triageInput.trim()) return
+    window.speechSynthesis.cancel() // Stop speaking if user interrupts
     
     const userMsg = triageInput
     setTriageMessages(prev => [...prev, { role: 'user', content: userMsg }])
@@ -73,6 +117,7 @@ function UploadWizard({ onComplete }) {
 
   const handleAnalyze = async () => {
     if (!file) return
+    window.speechSynthesis.cancel()
     setStep(3)
     setAnalysisStatus("Uploading file to secure server...")
 
@@ -101,7 +146,7 @@ function UploadWizard({ onComplete }) {
         
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
-        buffer = lines.pop() // keep incomplete JSON string in buffer
+        buffer = lines.pop()
         
         for (const line of lines) {
           if (line.trim()) {
@@ -141,7 +186,19 @@ function UploadWizard({ onComplete }) {
       
       {step === 1 && (
         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: '500px' }}>
-          <h2 style={{ marginBottom: '16px', textAlign: 'center' }}>AI Clinical Consultation</h2>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '16px', position: 'relative' }}>
+            <h2 style={{ margin: 0 }}>AI Clinical Consultation</h2>
+            <button 
+              onClick={() => {
+                setTtsEnabled(!ttsEnabled)
+                if (ttsEnabled) window.speechSynthesis.cancel()
+              }}
+              style={{ position: 'absolute', right: 0, background: 'none', border: 'none', cursor: 'pointer', color: ttsEnabled ? 'var(--accent-primary)' : 'var(--text-secondary)' }}
+              title="Toggle AI Voice"
+            >
+              {ttsEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
+            </button>
+          </div>
           
           <div style={{ flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {triageMessages.map((msg, idx) => (
@@ -174,17 +231,32 @@ function UploadWizard({ onComplete }) {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', alignItems: 'center' }}>
+            <button 
+              onClick={toggleListen}
+              className="btn-secondary"
+              style={{ 
+                padding: '12px', 
+                borderRadius: '50%', 
+                background: isListening ? 'rgba(239, 68, 68, 0.1)' : 'var(--bg-secondary)',
+                color: isListening ? 'var(--danger)' : 'var(--text-secondary)',
+                border: isListening ? '1px solid var(--danger)' : '1px solid var(--border-color)'
+              }}
+              title="Dictate Symptoms"
+            >
+              {isListening ? <Mic size={20} className="animate-pulse" /> : <MicOff size={20} />}
+            </button>
             <input 
               type="text" 
               className="input-field" 
-              placeholder="Type your response..."
+              placeholder={isListening ? "Listening..." : "Type your response..."}
               value={triageInput}
               onChange={(e) => setTriageInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleTriageSend()}
               disabled={showUploadButton}
+              style={{ flex: 1 }}
             />
-            <button className="btn-primary" onClick={handleTriageSend} disabled={isTriaging || showUploadButton}>
+            <button className="btn-primary" onClick={handleTriageSend} disabled={isTriaging || showUploadButton || (!triageInput.trim() && !isListening)}>
               Send
             </button>
           </div>

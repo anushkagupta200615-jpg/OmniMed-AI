@@ -120,9 +120,9 @@ User Question: {message}"""
                 contents=prompt
             )
         except Exception:
-            # Fallback to a lighter model if 2.5-flash is unavailable
+            # Fallback to gemini-2.0-flash if 2.5-flash is unavailable
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-2.0-flash',
                 contents=prompt
             )
         return response.text.strip()

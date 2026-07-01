@@ -13,8 +13,8 @@ def triage_symptoms(symptoms):
         prompt = f"""You are a Medical Triage AI. Analyze these symptoms: "{symptoms}"
 Determine:
 1. Suspected category (e.g. Hematology, Pulmonology)
-2. Required files (e.g. blood_report_pdf, chest_xray)
-3. Follow-up questions
+2. Required files (e.g. blood_report_pdf, chest_xray). Leave empty if you don't have enough information.
+3. Follow-up questions. IMPORTANT: If the user just says a greeting (like "hello"), or if the symptoms are too vague, you MUST provide at least one follow-up question asking them to describe their symptoms in detail. DO NOT recommend files if you don't know the symptoms.
 Return ONLY valid JSON:
 {{
   "suspected_category": "string",

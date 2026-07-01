@@ -76,7 +76,8 @@ function UploadWizard({ onComplete }) {
         .map(m => m.content)
         .join(' ') + ' ' + userMsg
 
-      const res = await fetch('http://localhost:5000/api/triage', {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+      const res = await fetch(`${API_BASE}/api/triage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symptoms: allSymptoms })
@@ -131,7 +132,8 @@ function UploadWizard({ onComplete }) {
     formData.append('symptoms', allSymptoms)
 
     try {
-      const response = await fetch('http://localhost:5000/api/analyze', {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+      const response = await fetch(`${API_BASE}/api/analyze`, {
         method: 'POST',
         body: formData
       })

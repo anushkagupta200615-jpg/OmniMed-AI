@@ -17,16 +17,25 @@ Write the response in {language}.
 Clinical Report:
 {json.dumps(report)}
 
-Provide output as JSON matching this structure:
+Provide output as JSON matching this exact structure:
 {{
   "dietary_recommendations": ["string"],
   "exercise_plan": ["string"],
   "lifestyle_changes": ["string"],
   "precautions": ["string"],
+  "weekly_schedule": [
+    {{
+      "day": "string (e.g., Monday)",
+      "morning_routine": "string",
+      "afternoon_routine": "string",
+      "evening_routine": "string"
+    }}
+  ],
   "summary": "string"
 }}"""
+        # Using gemini-2.0-flash as it's the standard for v1beta API
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-2.0-flash',
             contents=prompt
         )
         

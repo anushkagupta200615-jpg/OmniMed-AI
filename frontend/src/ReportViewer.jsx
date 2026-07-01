@@ -7,6 +7,8 @@ function ReportViewer({ report, validation, lifestylePlan, onChat }) {
 
   const handleDownloadPdf = () => {
     const element = reportRef.current
+    element.classList.add('pdf-export-container')
+    
     const opt = {
       margin: 10,
       filename: 'OmniMed_Clinical_Report.pdf',
@@ -14,7 +16,10 @@ function ReportViewer({ report, validation, lifestylePlan, onChat }) {
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }
-    html2pdf().from(element).set(opt).save()
+    
+    html2pdf().from(element).set(opt).save().then(() => {
+      element.classList.remove('pdf-export-container')
+    })
   }
 
   if (!report) return null
@@ -146,6 +151,33 @@ function ReportViewer({ report, validation, lifestylePlan, onChat }) {
                 <ul style={{ paddingLeft: '20px', fontSize: '0.9rem', lineHeight: '1.6' }}>
                   {[...(lifestylePlan.lifestyle_changes || []), ...(lifestylePlan.precautions || [])].map((item, i) => <li key={i}>{item}</li>)}
                 </ul>
+              </div>
+            )}
+
+            {lifestylePlan.weekly_schedule && lifestylePlan.weekly_schedule.length > 0 && (
+              <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '2px solid rgba(16, 185, 129, 0.2)' }}>
+                <h4 style={{ color: 'var(--accent-primary)', marginBottom: '16px', fontSize: '1.2rem' }}>Interactive Weekly Schedule</h4>
+                <div className="calendar-grid">
+                  {lifestylePlan.weekly_schedule.map((dayPlan, i) => (
+                    <div key={i} className="day-card">
+                      <div className="day-card-header">{dayPlan.day}</div>
+                      <div className="time-blocks">
+                        <div className="time-block">
+                          <h5>Morning</h5>
+                          <p>{dayPlan.morning_routine}</p>
+                        </div>
+                        <div className="time-block">
+                          <h5>Afternoon</h5>
+                          <p>{dayPlan.afternoon_routine}</p>
+                        </div>
+                        <div className="time-block">
+                          <h5>Evening</h5>
+                          <p>{dayPlan.evening_routine}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -87,44 +87,52 @@ Provide output as JSON matching this structure:
 
 def get_chat_response(message, context, language="English"):
     """Provides a chat response based on context and RAG."""
+    import time
     try:
-        # 1. Search Knowledge Base (RAG) - completely optional, skip silently if anything fails
+        # RAG: Only search if knowledge base actually has data (avoids wasting API quota on embeddings)
         kb_context = ""
         try:
-            if callable(search_knowledge_base):
+            import sqlite3
+            db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'database.db')
+            conn = sqlite3.connect(db_path)
+            count = conn.execute("SELECT COUNT(*) FROM knowledge_base").fetchone()[0]
+            conn.close()
+            if count > 0 and callable(search_knowledge_base):
                 kb_results = search_knowledge_base(message, top_k=3)
                 if kb_results:
                     kb_context = "\n\nVerified Medical Knowledge:\n" + "\n".join(kb_results)
         except Exception:
-            kb_context = ""  # RAG failure silently ignored
+            kb_context = ""
 
         client = get_client()
         prompt = f"""You are OmniMed AI, a highly capable medical assistant built by Anushka Gupta.
-You can understand questions written in any language, Romanized/transliterated text (like Hinglish), and text with spelling mistakes or typos.
+You MUST answer every question the user asks. You are a helpful medical AI that can discuss any health topic.
+You can understand questions in any language, Romanized text (like Hinglish), and text with typos.
 
-IMPORTANT RULES:
-- Always reply in {language}.
-- If the user writes in Hindi (even in Roman script like "mujhe pet me dard hai"), reply in Hindi.
-- If the user writes with spelling errors or typos, understand the meaning and answer helpfully anyway.
-- Never refuse to answer due to typos, spelling errors, or mixed languages.
-- If asked who built you: "I was developed by Anushka Gupta."
-- Be empathetic, clear and helpful.
+RULES:
+1. Always reply in {language}.
+2. If the user writes in Hindi (even Roman script like "mujhe pet me dard hai"), reply in Hindi.
+3. Understand typos and spelling errors — never refuse to answer because of them.
+4. If asked who built you: "I was developed by Anushka Gupta."
+5. Answer ALL medical and health questions with detailed, helpful information.
+6. Be empathetic, clear and helpful. Give actionable advice.
 {kb_context}
 
-Patient Report Context: {context}
+Report Context: {context}
 
-User Question: {message}"""
-        # 3-tier model fallback for maximum availability
+User: {message}"""
+        # Try lightest model first (most available), then scale up
         response = None
-        for model in ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite']:
+        for model in ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash']:
             try:
                 response = client.models.generate_content(
                     model=model,
                     contents=prompt
                 )
-                break  # success, stop trying
+                break
             except Exception:
-                continue  # try next model
+                time.sleep(1)  # small delay before retry to avoid rate limit
+                continue
 
         if response is None:
             raise Exception("All models unavailable")

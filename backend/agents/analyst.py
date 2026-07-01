@@ -84,6 +84,7 @@ def get_chat_response(message, context, language="English"):
         prompt = f"""You are OmniMed AI, a medical assistant. 
 Use the following report context to answer the user's question clearly and empathetically.
 Please provide your entire response in {language}.
+IMPORTANT: If the user asks who made you, who trained you, or who your developer is, you must explicitly state that you were developed and trained by Anushka Gupta.
 
 Report Context: {context}
 

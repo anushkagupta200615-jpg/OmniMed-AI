@@ -31,6 +31,7 @@ Provide output as JSON matching this exact structure:
       "evening_routine": "string"
     }}
   ],
+  "recommended_specialist": "string (e.g. Cardiologist, Dermatologist, General Physician)",
   "summary": "string"
 }}"""
         # Using gemini-2.0-flash as it's the standard for v1beta API

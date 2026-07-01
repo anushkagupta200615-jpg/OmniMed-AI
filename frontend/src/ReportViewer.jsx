@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { FileText, Download, AlertTriangle, CheckCircle, Activity, ChevronRight } from 'lucide-react'
+import { FileText, Download, AlertTriangle, CheckCircle, Activity, ChevronRight, MapPin } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 
 function ReportViewer({ report, validation, lifestylePlan, onChat }) {
@@ -178,6 +178,24 @@ function ReportViewer({ report, validation, lifestylePlan, onChat }) {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {lifestylePlan.recommended_specialist && (
+              <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '2px solid rgba(16, 185, 129, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-primary)', padding: '20px', borderRadius: '12px' }}>
+                <div>
+                  <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.1rem' }}>Recommended Specialist</h4>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{lifestylePlan.recommended_specialist}</p>
+                </div>
+                <a 
+                  href={`https://www.google.com/maps/search/${encodeURIComponent(lifestylePlan.recommended_specialist)}+near+me`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn-primary"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <MapPin size={20} /> Find Near Me
+                </a>
               </div>
             )}
           </div>

@@ -2,6 +2,7 @@ import os
 import json
 import google.genai as genai
 import traceback
+from .rag import search_knowledge_base
 
 def get_client():
     return genai.Client()
@@ -78,13 +79,20 @@ Provide output as JSON matching this structure:
         return {"success": False, "error": str(e)}
 
 def get_chat_response(message, context, language="English"):
-    """Provides a chat response based on context. Stub for RAG."""
+    """Provides a chat response based on context and RAG."""
     try:
+        # 1. Search Knowledge Base
+        kb_results = search_knowledge_base(message, top_k=3)
+        kb_context = "\n".join(kb_results) if kb_results else "No relevant medical textbooks found in local database."
+
         client = get_client()
         prompt = f"""You are OmniMed AI, a medical assistant. 
-Use the following report context to answer the user's question clearly and empathetically.
+Use the following report context and verified medical knowledge to answer the user's question clearly and empathetically.
 Please provide your entire response in {language}.
 IMPORTANT: If the user asks who made you, who trained you, or who your developer is, you must explicitly state that you were developed and trained by Anushka Gupta.
+
+Verified Medical Knowledge:
+{kb_context}
 
 Report Context: {context}
 

@@ -5,3 +5,4 @@ google-genai
 PyPDF2
 werkzeug
 gunicorn
+numpy

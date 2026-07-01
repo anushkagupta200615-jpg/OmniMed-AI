@@ -3,6 +3,7 @@ import Dashboard from './Dashboard'
 import UploadWizard from './UploadWizard'
 import ChatAssistant from './ChatAssistant'
 import History from './History'
+import KnowledgeBase from './KnowledgeBase'
 import { Activity } from 'lucide-react'
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           </select>
           <button className="btn-secondary" onClick={() => setView('dashboard')}>Dashboard</button>
           <button className="btn-secondary" onClick={() => setView('history')}>History</button>
+          <button className="btn-secondary" onClick={() => setView('knowledge')}>Knowledge Base</button>
           <button className="btn-secondary" onClick={() => setView('chat')}>Consult AI</button>
           <button className="btn-primary" onClick={() => setView('upload')}>New Analysis</button>
         </nav>
@@ -44,6 +46,7 @@ function App() {
         {view === 'dashboard' && <Dashboard setView={setView} />}
         {view === 'upload' && <UploadWizard onComplete={() => setView('history')} language={language.name} languageCode={language.code} />}
         {view === 'history' && <History setView={setView} />}
+        {view === 'knowledge' && <KnowledgeBase />}
         {view === 'chat' && <ChatAssistant reportContext="" language={language.name} languageCode={language.code} />}
       </main>
     </div>

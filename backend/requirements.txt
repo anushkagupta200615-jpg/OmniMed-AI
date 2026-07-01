@@ -4,3 +4,4 @@ python-dotenv
 google-genai
 PyPDF2
 werkzeug
+gunicorn

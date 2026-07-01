@@ -114,17 +114,20 @@ IMPORTANT RULES:
 Patient Report Context: {context}
 
 User Question: {message}"""
-        try:
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt
-            )
-        except Exception:
-            # Fallback to gemini-2.0-flash if 2.5-flash is unavailable
-            response = client.models.generate_content(
-                model='gemini-2.0-flash',
-                contents=prompt
-            )
+        # 3-tier model fallback for maximum availability
+        response = None
+        for model in ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite']:
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt
+                )
+                break  # success, stop trying
+            except Exception:
+                continue  # try next model
+
+        if response is None:
+            raise Exception("All models unavailable")
         return response.text.strip()
     except Exception as e:
         traceback.print_exc()

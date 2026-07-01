@@ -10,7 +10,13 @@ from agents.extractor import extract_from_image, extract_from_pdf
 from agents.analyst import analyze_scan, get_chat_response, triage_symptoms
 from agents.validator import validate_report
 from agents.planner import generate_lifestyle_plan
-from agents.rag import add_to_knowledge_base
+try:
+    from agents.rag import add_to_knowledge_base
+    RAG_AVAILABLE = True
+except Exception as _rag_err:
+    print(f"RAG module not available: {_rag_err}")
+    add_to_knowledge_base = None
+    RAG_AVAILABLE = False
 import PyPDF2
 import io
 
@@ -192,6 +198,9 @@ def history():
 @app.route('/api/knowledge/upload', methods=['POST'])
 def upload_knowledge():
     try:
+        if not RAG_AVAILABLE or not callable(add_to_knowledge_base):
+            return jsonify({"success": False, "error": "RAG module not available on this server (numpy may not be installed)."}), 503
+
         if 'file' not in request.files:
             return jsonify({"success": False, "error": "No file part"}), 400
             
@@ -210,8 +219,7 @@ def upload_knowledge():
         for page in pdf_reader.pages:
             text += page.extract_text() + "\n"
 
-        # Chunk the text (approx 500 characters per chunk)
-        # We'll split by double newline first to preserve paragraphs, then chunk.
+        # Chunk the text (approx 1000 characters per chunk)
         paragraphs = text.split('\n\n')
         chunks = []
         current_chunk = ""

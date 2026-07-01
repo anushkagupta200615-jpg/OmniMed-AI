@@ -9,8 +9,12 @@ if (recognition) {
 }
 
 function ChatAssistant({ reportContext }) {
+  const initialMessage = reportContext 
+    ? 'Hello! I am OmniMed AI, your clinical consultation assistant. I have reviewed your report. How can I help you understand your results today?'
+    : 'Hello! I am OmniMed AI, your clinical consultation assistant. How can I help you with your health questions today?';
+
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hello! I am OmniMed AI, your clinical consultation assistant. I have reviewed your report. How can I help you understand your results today?' }
+    { role: 'assistant', content: initialMessage }
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)

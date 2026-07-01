@@ -2,7 +2,14 @@ import os
 import json
 import google.genai as genai
 import traceback
-from .rag import search_knowledge_base
+
+try:
+    from agents.rag import search_knowledge_base
+except ImportError:
+    try:
+        from .rag import search_knowledge_base
+    except ImportError:
+        search_knowledge_base = None
 
 def get_client():
     return genai.Client()
@@ -81,15 +88,22 @@ Provide output as JSON matching this structure:
 def get_chat_response(message, context, language="English"):
     """Provides a chat response based on context and RAG."""
     try:
-        # 1. Search Knowledge Base
-        kb_results = search_knowledge_base(message, top_k=3)
-        kb_context = "\n".join(kb_results) if kb_results else "No relevant medical textbooks found in local database."
+        # 1. Search Knowledge Base (RAG) - fail gracefully if unavailable
+        kb_context = "No relevant medical textbooks found in local database."
+        try:
+            if search_knowledge_base:
+                kb_results = search_knowledge_base(message, top_k=3)
+                if kb_results:
+                    kb_context = "\n".join(kb_results)
+        except Exception:
+            pass  # RAG failure should never block the chat
 
         client = get_client()
-        prompt = f"""You are OmniMed AI, a medical assistant. 
-Use the following report context and verified medical knowledge to answer the user's question clearly and empathetically.
-Please provide your entire response in {language}.
-IMPORTANT: If the user asks who made you, who trained you, or who your developer is, you must explicitly state that you were developed and trained by Anushka Gupta.
+        prompt = f"""You are OmniMed AI, a medical assistant built by Anushka Gupta.
+Answer the user's question clearly, empathetically and helpfully using the context below.
+Please provide your ENTIRE response in {language} — this is very important.
+If the user asks who made you, who trained you, or who your developer is, say: "I was developed and trained by Anushka Gupta."
+If the user types in Hindi or any other language, reply in that same language.
 
 Verified Medical Knowledge:
 {kb_context}

@@ -5,6 +5,9 @@ import numpy as np
 import google.genai as genai
 import traceback
 
+# Use an absolute path so the DB is found regardless of working directory
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'database.db')
+
 def get_client():
     return genai.Client()
 
@@ -40,7 +43,7 @@ def search_knowledge_base(query, top_k=3):
 
         query_vec = np.array(query_embedding)
 
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("SELECT id, content, embedding FROM knowledge_base")
         rows = c.fetchall()
@@ -69,7 +72,7 @@ def search_knowledge_base(query, top_k=3):
 def add_to_knowledge_base(filename, chunks):
     """Generates embeddings for chunks and saves them to the DB."""
     try:
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         
         for chunk in chunks:

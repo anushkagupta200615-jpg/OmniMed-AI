@@ -20,13 +20,16 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+# Use absolute path for DB so it works everywhere (local and Render)
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db')
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def init_db():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS history
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -149,7 +152,7 @@ def chat():
 @app.route('/api/history', methods=['GET', 'POST'])
 def history():
     try:
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         
         if request.method == 'POST':

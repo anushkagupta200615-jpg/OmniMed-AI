@@ -2,6 +2,9 @@
 
 OmniMed AI is a next-generation medical analysis platform designed to bridge the gap between patient symptoms and complex medical data. Utilizing a multi-agent AI architecture powered by Google Gemini, the platform provides interactive symptom triage, automates the extraction of clinical findings from medical scans, and generates comprehensive, easy-to-understand clinical reports.
 
+**🌍 Live Demo:** [https://omnimed-ai-omnimed-frontend.onrender.com](https://omnimed-ai-omnimed-frontend.onrender.com)
+*(Backend API hosted at: https://omnimed-ai-omnimed-backend.onrender.com)*
+
 ## ✨ Key Features
 
 * **💬 Interactive AI Consultation:** A ChatGPT-style triage interface that asks dynamic follow-up questions to understand patient symptoms before analysis.

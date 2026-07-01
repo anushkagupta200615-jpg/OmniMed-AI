@@ -8,7 +8,7 @@ if (recognition) {
   recognition.interimResults = false
 }
 
-function ChatAssistant({ reportContext }) {
+function ChatAssistant({ reportContext, language, languageCode }) {
   const initialMessage = reportContext 
     ? 'Hello! I am OmniMed AI, your clinical consultation assistant. I have reviewed your report. How can I help you understand your results today?'
     : 'Hello! I am OmniMed AI, your clinical consultation assistant. How can I help you with your health questions today?';
@@ -38,10 +38,15 @@ function ChatAssistant({ reportContext }) {
     }
   }, [messages, ttsEnabled])
 
+  useEffect(() => {
+    if (recognition) recognition.lang = languageCode || 'en-US'
+  }, [languageCode])
+
   const speakMessage = (text) => {
     if (!window.speechSynthesis || !ttsEnabled) return
     window.speechSynthesis.cancel() // Stop any current speech
     const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = languageCode || 'en-US'
     utterance.rate = 1.05
     window.speechSynthesis.speak(utterance)
   }
@@ -80,7 +85,8 @@ function ChatAssistant({ reportContext }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMsg,
-          context: reportContext || 'No report context provided yet.'
+          context: reportContext || 'No report context provided yet.',
+          language: language || 'English'
         })
       })
 

@@ -1,12 +1,15 @@
 import os
 import json
+import sqlite3
+import datetime
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
 
 from agents.extractor import extract_from_image, extract_from_pdf
-from agents.analyst import analyze_scan, get_chat_response
+from agents.analyst import analyze_scan, get_chat_response, triage_symptoms
 from agents.validator import validate_report
+from agents.planner import generate_lifestyle_plan
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +21,20 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def init_db():
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS history
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  timestamp TEXT,
+                  report TEXT,
+                  validation TEXT,
+                  lifestyle_plan TEXT)''')
+    conn.commit()
+    conn.close()
+
+init_db()
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -32,13 +49,11 @@ def triage():
     try:
         data = request.get_json()
         symptoms = data.get('symptoms', '')
+        language = data.get('language', 'English')
         if not symptoms:
             return jsonify({"success": False, "error": "No symptoms provided"}), 400
             
-        # Simplified triage logic calling Gemini (mocked for now, will implement in analyst)
-        # Using the unified analyst agent to handle this
-        from agents.analyst import triage_symptoms
-        result = triage_symptoms(symptoms)
+        result = triage_symptoms(symptoms, language)
         return jsonify({"success": True, "data": result})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -52,6 +67,7 @@ def analyze():
             
         scan_file = request.files['scan_file']
         patient_data = request.form.to_dict()
+        language = request.form.get('language', 'English')
         
         file_bytes = scan_file.read()
         is_pdf = scan_file.filename.lower().endswith('.pdf')
@@ -76,7 +92,7 @@ def analyze():
             extracted_text = extract_res['extracted_text']
             
             yield json.dumps({"status": "analyzing", "message": "Agent 2: Generating clinical report..."}) + "\n"
-            analyst_res = analyze_scan(extracted_text, patient_data)
+            analyst_res = analyze_scan(extracted_text, patient_data, language)
             
             if not analyst_res['success']:
                 yield json.dumps({"success": False, "error": analyst_res.get('error')}) + "\n"
@@ -86,13 +102,18 @@ def analyze():
             
             yield json.dumps({"status": "validating", "message": "Agent 3: Validating report findings..."}) + "\n"
             validator_res = validate_report(report)
+
+            yield json.dumps({"status": "planning", "message": "Agent 4: Generating lifestyle plan..."}) + "\n"
+            planner_res = generate_lifestyle_plan(report, language)
+            plan = planner_res.get('plan', {}) if planner_res['success'] else {}
             
             yield json.dumps({
                 "success": True,
                 "status": "complete",
                 "extractor_output": extracted_text,
                 "report": report,
-                "validation": validator_res.get('validation', {})
+                "validation": validator_res.get('validation', {}),
+                "lifestyle_plan": plan
             }) + "\n"
             
         except Exception as e:
@@ -106,13 +127,54 @@ def chat():
         data = request.get_json()
         message = data.get('message', '')
         context = data.get('context', '')
+        language = data.get('language', 'English')
         
         if not message:
             return jsonify({"success": False, "error": "No message provided"}), 400
             
-        reply = get_chat_response(message, context)
+        reply = get_chat_response(message, context, language)
         return jsonify({"success": True, "reply": reply})
     except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/history', methods=['GET', 'POST'])
+def history():
+    try:
+        conn = sqlite3.connect('database.db')
+        c = conn.cursor()
+        
+        if request.method == 'POST':
+            data = request.get_json()
+            timestamp = datetime.datetime.now().isoformat()
+            report = json.dumps(data.get('report', {}))
+            validation = json.dumps(data.get('validation', {}))
+            lifestyle_plan = json.dumps(data.get('lifestyle_plan', {}))
+            
+            c.execute("INSERT INTO history (timestamp, report, validation, lifestyle_plan) VALUES (?, ?, ?, ?)",
+                      (timestamp, report, validation, lifestyle_plan))
+            conn.commit()
+            conn.close()
+            return jsonify({"success": True, "message": "Saved to history"})
+            
+        elif request.method == 'GET':
+            c.execute("SELECT id, timestamp, report, validation, lifestyle_plan FROM history ORDER BY timestamp DESC")
+            rows = c.fetchall()
+            conn.close()
+            
+            history_list = []
+            for row in rows:
+                history_list.append({
+                    "id": row[0],
+                    "timestamp": row[1],
+                    "report": json.loads(row[2]),
+                    "validation": json.loads(row[3]),
+                    "lifestyle_plan": json.loads(row[4])
+                })
+            return jsonify({"success": True, "history": history_list})
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { FileText, Download, AlertTriangle, CheckCircle, Activity, ChevronRight } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 
-function ReportViewer({ report, validation, onChat }) {
+function ReportViewer({ report, validation, lifestylePlan, onChat }) {
   const reportRef = useRef()
 
   const handleDownloadPdf = () => {
@@ -114,6 +114,42 @@ function ReportViewer({ report, validation, onChat }) {
             )) || <li>Consult a healthcare professional.</li>}
           </ul>
         </div>
+
+        {lifestylePlan && (
+          <div style={{ marginBottom: '40px', background: 'rgba(16, 185, 129, 0.05)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+            <h3 style={{ borderBottom: '1px solid rgba(16, 185, 129, 0.2)', paddingBottom: '8px', marginBottom: '16px', color: 'var(--success)' }}>
+              Agent 4: Lifestyle & Treatment Plan
+            </h3>
+            
+            {lifestylePlan.summary && (
+              <p style={{ fontStyle: 'italic', marginBottom: '20px' }}>{lifestylePlan.summary}</p>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div>
+                <h4 style={{ color: 'var(--text-secondary)' }}>Dietary Recommendations</h4>
+                <ul style={{ paddingLeft: '20px', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                  {lifestylePlan.dietary_recommendations?.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              </div>
+              <div>
+                <h4 style={{ color: 'var(--text-secondary)' }}>Exercise Plan</h4>
+                <ul style={{ paddingLeft: '20px', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                  {lifestylePlan.exercise_plan?.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              </div>
+            </div>
+
+            {(lifestylePlan.lifestyle_changes?.length > 0 || lifestylePlan.precautions?.length > 0) && (
+              <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <h4 style={{ color: 'var(--text-secondary)' }}>Additional Precautions & Changes</h4>
+                <ul style={{ paddingLeft: '20px', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                  {[...(lifestylePlan.lifestyle_changes || []), ...(lifestylePlan.precautions || [])].map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {validation && (
           <div style={{ 

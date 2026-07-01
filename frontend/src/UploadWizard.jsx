@@ -9,7 +9,7 @@ if (recognition) {
   recognition.interimResults = false
 }
 
-function UploadWizard({ onComplete }) {
+function UploadWizard({ onComplete, language, languageCode }) {
   const [step, setStep] = useState(1)
   const [file, setFile] = useState(null)
   const [triageMessages, setTriageMessages] = useState([
@@ -23,11 +23,15 @@ function UploadWizard({ onComplete }) {
   const [isListening, setIsListening] = useState(false)
   const [ttsEnabled, setTtsEnabled] = useState(true)
   
-  // Analysis state
   const [analysisStatus, setAnalysisStatus] = useState("Initializing...")
   const [reportData, setReportData] = useState(null)
   const [validationData, setValidationData] = useState(null)
+  const [lifestylePlan, setLifestylePlan] = useState(null)
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    if (recognition) recognition.lang = languageCode || 'en-US'
+  }, [languageCode])
 
   useEffect(() => {
     if (ttsEnabled && step === 1) {
@@ -39,6 +43,7 @@ function UploadWizard({ onComplete }) {
     if (!window.speechSynthesis || !ttsEnabled) return
     window.speechSynthesis.cancel() // Stop any current speech
     const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = languageCode || 'en-US'
     utterance.rate = 1.05
     window.speechSynthesis.speak(utterance)
   }
@@ -80,7 +85,7 @@ function UploadWizard({ onComplete }) {
       const res = await fetch(`${API_BASE}/api/triage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symptoms: allSymptoms })
+        body: JSON.stringify({ symptoms: allSymptoms, language: language || 'English' })
       })
       const data = await res.json()
       
@@ -130,6 +135,7 @@ function UploadWizard({ onComplete }) {
     const formData = new FormData()
     formData.append('scan_file', file)
     formData.append('symptoms', allSymptoms)
+    formData.append('language', language || 'English')
 
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -163,6 +169,19 @@ function UploadWizard({ onComplete }) {
             if (parsed.status === 'complete') {
               setReportData(parsed.report)
               setValidationData(parsed.validation)
+              setLifestylePlan(parsed.lifestyle_plan)
+              
+              // Save to history
+              fetch(`${API_BASE}/api/history`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  report: parsed.report,
+                  validation: parsed.validation,
+                  lifestyle_plan: parsed.lifestyle_plan
+                })
+              }).catch(e => console.error("Failed to save history", e))
+
               setStep(4)
               if (onComplete) onComplete(parsed.report)
             }
@@ -175,7 +194,7 @@ function UploadWizard({ onComplete }) {
   }
 
   if (step === 4) {
-    return <ReportViewer report={reportData} validation={validationData} onChat={() => alert('Chat integration ready!')} />
+    return <ReportViewer report={reportData} validation={validationData} lifestylePlan={lifestylePlan} onChat={() => alert('Chat integration ready!')} />
   }
 
   return (

@@ -138,15 +138,7 @@ User: {message}"""
             raise Exception("All models unavailable")
         return response.text.strip()
     except Exception as e:
+        import traceback
         traceback.print_exc()
-        # Return an error message that matches the language
-        if language == 'हिन्दी':
-            return "क्षमा करें, अभी सेवा उपलब्ध नहीं है। कृपया दोबारा कोशिश करें।"
-        elif language == 'Español':
-            return "Lo siento, el servicio no está disponible en este momento. Por favor, inténtalo de nuevo."
-        elif language == 'Français':
-            return "Désolé, le service n'est pas disponible en ce moment. Veuillez réessayer."
-        elif language == '中文':
-            return "抱歉，服务暂时不可用，请稍后再试。"
-        else:
-            return "I'm sorry, I'm having trouble connecting right now. Please try again in a moment."
+        # TEMPORARY DEBUG: return the exact error message to the user
+        return f"DEBUG ERROR: {str(e)}"
